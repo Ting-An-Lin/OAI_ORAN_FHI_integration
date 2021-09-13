@@ -964,7 +964,7 @@ include_directories("${XRAN_DIR}")
 include_directories ("/usr/local/dpdk_19_11/include/dpdk")
 
 set(ORAN_FHLIB_4G_SOURCE
-    ${OPENAIR_TARGETS}/ARCH/ETHERNET/oran/4g/oran.cc
+    ${OPENAIR_TARGETS}/ARCH/ETHERNET/oran/4g/oran.cpp
     ${OPENAIR_TARGETS}/ARCH/ETHERNET/oran/4g/shared_buffers.c
     ${OPENAIR_TARGETS}/ARCH/ETHERNET/oran/4g/low_oran.c
     ${OPENAIR_TARGETS}/ARCH/ETHERNET/oran/4g/low_dpdk_oran.c
