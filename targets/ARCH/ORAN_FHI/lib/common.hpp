@@ -31,7 +31,7 @@
 #include <rte_malloc.h>
 #endif
 
-#include "gtest/gtest.h"
+// #include "gtest/gtest.h"
 
 #include "common_typedef_xran.h"
 
@@ -140,6 +140,7 @@ unsigned long tsc_tick();
     values, e.g. 1, 0.001, 5e-05, etc. or filename. Depends on the get type test framework can either
     read the value or load data from the file - and it happens automatically (*pff* MAGIC!).
 */
+#if 0 //Ann: we don't need this test in OAI, so we comment out all GTest dependencies to include xran_lib_wrap.hpp
 class KernelTests : public testing::TestWithParam<unsigned>
 {
 public:
@@ -574,7 +575,7 @@ private:
                                  const double mean,
                                  const double stddev);
 };
-
+#endif
 /*!
     \brief Run the given function and return the mean run time and stddev.
     \param [in] function Function to benchmark.
