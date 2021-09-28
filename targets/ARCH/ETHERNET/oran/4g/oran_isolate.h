@@ -19,20 +19,22 @@
  *      contact@openairinterface.org
  */
 
+#ifndef _ORAN_ISOLATE_H_
+#define _ORAN_ISOLATE_H_
+
 #include <stdio.h>
-#include "common_lib.h"
 #include "shared_buffers.h"
 #include "low_oran.h"
 
-// void *get_internal_parameter(char *name);
-// void oran_fh_if4p5_south_in(RU_t *ru,
-//                                int *frame,
-//                                int *subframe);
-// void oran_fh_if4p5_south_out(RU_t *ru,
-//                                 int frame,
-//                                 int subframe,
-//                                 uint64_t timestamp);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-void init_south(openair0_device *device,
-                openair0_config_t *openair0_cfg,
-                eth_params_t * eth_params );
+int start_oran();
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _ORAN_ISOLATE_H_ */

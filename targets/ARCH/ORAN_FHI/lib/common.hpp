@@ -31,7 +31,7 @@
 #include <rte_malloc.h>
 #endif
 
-// #include "gtest/gtest.h"
+//#include "gtest/gtest.h"
 
 #include "common_typedef_xran.h"
 
@@ -106,7 +106,7 @@ json read_json_from_file(const std::string &filename);
     \return Pointer to the allocated memory with data from the file.
     \throws std::runtime_error when memory cannot be allocated.
 */
-char* read_data_to_aligned_array(const std::string &filename);
+//char* read_data_to_aligned_array(const std::string &filename);
 
 /*!
     \brief Measure the TSC on the machine
@@ -575,7 +575,7 @@ private:
                                  const double mean,
                                  const double stddev);
 };
-#endif
+
 /*!
     \brief Run the given function and return the mean run time and stddev.
     \param [in] function Function to benchmark.
@@ -594,7 +594,7 @@ std::pair<double, double> run_benchmark(F function, Args ... args)
         }
         const auto end_time = __rdtsc();
         results.push_back(end_time - start_time);
-    }
+     }
 
     return calculate_statistics(results);
 };
@@ -665,9 +665,9 @@ void assert_avg_greater_complex(const T* reference, const T* actual, const int s
         T errReal = resReal - refReal;
         T errIm = resImag - refImag;
 
-        /* For some unit tests, e.g. PUCCH deomdulation, the expected output is 0. To avoid a
+         For some unit tests, e.g. PUCCH deomdulation, the expected output is 0. To avoid a
            divide by zero error, check the reference results to determine if the expected result
-           is 0 and, if so, add a 1 to the division. */
+           is 0 and, if so, add a 1 to the division. 
         if (refReal == 0 && refImag == 0)
             MSE = (float)(errReal*errReal + errIm*errIm)/(float)(refReal*refReal + refImag*refImag + 1);
         else
@@ -828,5 +828,6 @@ T* generate_random_real_numbers(const long size, const unsigned alignment, const
 
     return generate_random_numbers<T, std::uniform_real_distribution<T>>(size, alignment, distribution);
 }
+#endif
 
 #endif //XRANLIB_COMMON_HPP

@@ -24,8 +24,8 @@
 #include "common_lib.h"
 #include "ethernet_lib.h"
 #include "shared_buffers.h"
-#include "xran_lib_wrap.hpp"
-
+#include "low_oran.h"
+#include "oran_isolate.h"
 
 typedef struct {
   eth_state_t           e;
@@ -36,54 +36,14 @@ typedef struct {
 } oran_eth_state_t;
 
 
-
-char *msg_type(int t)
-{
-  static char *s[12] = {
-    "RAU_tick",
-    "RRU_capabilities",
-    "RRU_config",
-    "RRU_config_ok",
-    "RRU_start",
-    "RRU_stop",
-    "RRU_sync_ok",
-    "RRU_frame_resynch",
-    "RRU_MSG_max_num",
-    "RRU_check_sync",
-    "RRU_config_update",
-    "RRU_config_update_ok",
-  };
-
-  if (t < 0 || t > 11) return "UNKNOWN";
-  return s[t];
-}
-
-
-void xran_fh_rx_callback(void *pCallbackTag, xran_status_t status){
-    rte_pause();
-}
-void xran_fh_srs_callback(void *pCallbackTag, xran_status_t status){
-    rte_pause();
-}
-void xran_fh_rx_prach_callback(void *pCallbackTag, xran_status_t status){
-    rte_pause();
-}
-
 int trx_oran_start(openair0_device *device)
 {
-  xranLibWraper *xranlib; 
-  xranlib = new xranLibWraper;
   
-  if(xranlib->SetUp() < 0) {
-     return (-1);
+  int oran_start_ret = start_oran();
+
+  if(oran_start_ret!=0){
+    return oran_start_ret;
   }
-  xranlib->Init();
-  xranlib->Open(nullptr, 
-            nullptr, 
-            (void *)xran_fh_rx_callback, 
-            (void *)xran_fh_rx_prach_callback, 
-            (void *)xran_fh_srs_callback);
-  xranlib->Start();
   
   printf("ORAN: %s\n", __FUNCTION__);
   return 0;
@@ -143,7 +103,7 @@ int trx_oran_write_raw(openair0_device *device,
                           void **buff, int nsamps, int cc, int flags)
 {
   printf("ORAN: %s\n", __FUNCTION__);
-  return nsamps*4;
+  return 0;
 }
 
 int trx_oran_read_raw(openair0_device *device,
@@ -151,64 +111,21 @@ int trx_oran_read_raw(openair0_device *device,
                          void **buff, int nsamps, int cc)
 {
   printf("ORAN: %s\n", __FUNCTION__);
-  return nsamps*4;
+  return 0;
 }
 
 int trx_oran_ctlsend(openair0_device *device, void *msg, ssize_t msg_len)
 {
-  RRU_CONFIG_msg_t *rru_config_msg = msg;
-  oran_eth_state_t *s = device->priv;
-
-  printf("ORAN: %s\n", __FUNCTION__);
-
-  printf("    rru_config_msg->type %d [%s]\n", rru_config_msg->type,
-         msg_type(rru_config_msg->type));
-
-  s->last_msg = rru_config_msg->type;
-
-  return msg_len;
-}
-
-
-int trx_oran_ctlrecv(openair0_device *device, void *msg, ssize_t msg_len)
-{
-  RRU_CONFIG_msg_t *rru_config_msg = msg;
- oran_eth_state_t *s = device->priv;
-
-  printf("ORAN: %s\n", __FUNCTION__);
-
-  if (s->last_msg == RAU_tick && s->capabilities_sent == 0) {
-    RRU_capabilities_t *cap;
-    rru_config_msg->type = RRU_capabilities;
-    rru_config_msg->len  = sizeof(RRU_CONFIG_msg_t)-MAX_RRU_CONFIG_SIZE+sizeof(RRU_capabilities_t);
-    cap = (RRU_capabilities_t*)&rru_config_msg->msg[0];
-    cap->FH_fmt                           = ORAN_only;
-    cap->num_bands                        = 1;
-    cap->band_list[0]                     = 7;
-    cap->nb_rx[0]                         = 1;
-    cap->nb_tx[0]                         = 1;
-    cap->max_pdschReferenceSignalPower[0] = -27;
-    cap->max_rxgain[0]                    = 90;
-
-    s->capabilities_sent = 1;
-
-    return rru_config_msg->len;
-  }
-  if (s->last_msg == RRU_config) {
-    rru_config_msg->type = RRU_config_ok;
-    return 0;
-  }
-  if (s->last_msg == RRU_start) {
-    s->oran_priv = oran_start(s->e.if_name, &s->buffers);
-  }
-  /* correct? */
-  while (1) pause();
 
   return 0;
 }
 
 
+int trx_oran_ctlrecv(openair0_device *device, void *msg, ssize_t msg_len)
+{
 
+  return 0;
+}
 
 /*This function reads the IQ samples from OAI, symbol by symbol.
  It also handles the shared buffers.                          */
@@ -217,7 +134,7 @@ void oran_fh_if4p5_south_in(RU_t *ru,
                                int *frame,
                                int *subframe)
 {
-  oran_eth_state_t *s = ru->ifdevice.priv;
+  oran_eth_state_t *s = (oran_eth_state_t *) ru->ifdevice.priv;
   PHY_VARS_eNB **eNB_list = ru->eNB_list, *eNB;
   LTE_DL_FRAME_PARMS *fp;
   int symbol;
@@ -289,7 +206,7 @@ void oran_fh_if4p5_south_out(RU_t *ru,
                                 int subframe,
                                 uint64_t timestamp)
 {
-  oran_eth_state_t *s = ru->ifdevice.priv;
+  oran_eth_state_t *s = (oran_eth_state_t *) ru->ifdevice.priv;
   PHY_VARS_eNB **eNB_list = ru->eNB_list, *eNB;
   LTE_DL_FRAME_PARMS *fp;
   int symbol;
@@ -339,12 +256,13 @@ void *get_internal_parameter(char *name)
   printf("BENETEL: %s\n", __FUNCTION__);
 
   if (!strcmp(name, "fh_if4p5_south_in"))
-    return oran_fh_if4p5_south_in;
+    return (void *) oran_fh_if4p5_south_in;
   if (!strcmp(name, "fh_if4p5_south_out"))
-    return oran_fh_if4p5_south_out;
+    return (void *) oran_fh_if4p5_south_out;
 
   return NULL;
 }
+
 
 __attribute__((__visibility__("default")))
 int transport_init(openair0_device *device,
@@ -352,7 +270,7 @@ int transport_init(openair0_device *device,
                    eth_params_t * eth_params )
 {
   oran_eth_state_t *eth;
-printf("Ann: ORANNN\n");
+  printf("Ann: ORANNN\n");
   printf("ORAN: %s\n", __FUNCTION__);
 
   device->Mod_id               = 0;
@@ -371,9 +289,10 @@ printf("Ann: ORANNN\n");
   device->trx_ctlsend_func     = trx_oran_ctlsend;
   device->trx_ctlrecv_func     = trx_oran_ctlrecv;
 
+
   device->get_internal_parameter = get_internal_parameter;
 
-  eth = calloc(1, sizeof(oran_eth_state_t));
+  eth = (oran_eth_state_t *)calloc(1, sizeof(oran_eth_state_t));
   if (eth == NULL) {
     AssertFatal(0==1, "out of memory\n");
   }
@@ -384,36 +303,10 @@ printf("Ann: ORANNN\n");
   device->priv = eth;
   device->openair0_cfg=&openair0_cfg[0];
 
-  eth->last_msg = -1;
+  eth->last_msg = (rru_config_msg_type_t)-1;
 
   init_buffers(&eth->buffers);
 
+
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
